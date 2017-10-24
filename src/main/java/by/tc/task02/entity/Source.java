@@ -29,4 +29,9 @@ public class Source implements Serializable{
     public int hashCode() {
         return content.hashCode();
     }
+
+    @Override
+    public String toString() {
+        return content;
+    }
 }

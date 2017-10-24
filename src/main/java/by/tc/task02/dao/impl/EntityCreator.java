@@ -15,9 +15,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class EntityCreator {
+
+    public static final char TAG_BEGINNING = '<';
+    public static final char TAG_END = '>';
+
     private Source source;
     private Deque<Element> elements;
     private Deque<Entity> entityStack;
+
 
     public EntityCreator() {
         elements = new ArrayDeque<>();
@@ -38,19 +43,16 @@ public class EntityCreator {
     }
 
     private void processSource() {
-        String content = source.getContent();
-        StringBuilder contentBuilder = new StringBuilder(content);
+        StringBuilder content = new StringBuilder(source.getContent());
 
-        initRoot(contentBuilder);
+        initRoot(content);
 
         int elementLevel = 1;
         int symbol = 0;
-        char tagBeginning = '<';
-        char tagEnd = '>';
-        while (contentBuilder.toString().length() != symbol) {
-            if (contentBuilder.charAt(symbol) == tagBeginning) {
-                int lastSymbol = getIndexOf(contentBuilder, tagEnd, symbol);
-                String tagName = contentBuilder.toString().substring(symbol, lastSymbol);
+        while (content.toString().length() != symbol) {
+            if (content.charAt(symbol) == TAG_BEGINNING) {
+                int lastSymbol = getIndexOf(content, TAG_END, symbol);
+                String tagName = content.toString().substring(symbol, lastSymbol);
 
                 symbol = lastSymbol;
 
@@ -67,8 +69,8 @@ public class EntityCreator {
 
                 elementLevel++;
             } else {
-                int lastSymbol = getIndexOf(contentBuilder, tagBeginning, symbol) - 1;
-                String tagContent = contentBuilder.toString().substring(symbol, lastSymbol);
+                int lastSymbol = getIndexOf(content, TAG_BEGINNING, symbol) - 1;
+                String tagContent = content.toString().substring(symbol, lastSymbol);
                 pushElement(tagContent, elementLevel);
                 symbol = lastSymbol;
             }
@@ -77,21 +79,22 @@ public class EntityCreator {
 
     }
 
-    private void formEntityStack(Entity entityToPush){
-        if(entityStack.isEmpty()){
+    private void formEntityStack(Entity entityToPush) {
+        if (entityStack.isEmpty()) {
             entityStack.push(entityToPush);
             return;
         }
-        while(entityStack.size()!=0&& entityStack.peek().getNestingLevel()>entityToPush.getNestingLevel()) {
+        while (entityStack.size() != 0 && entityStack.peek().getNestingLevel() > entityToPush.getNestingLevel()) {
             Entity currentEntity = entityStack.pop();
             entityToPush.addChildEntities(currentEntity);
         }
         entityStack.push(entityToPush);
     }
+
     private Entity formNewEntity(int level) {
         Entity entity = new Entity();
 
-        if(!isTag(elements.peek())) {
+        if (!isTag(elements.peek())) {
 
             Element element = elements.pop();
             entity.setValue(element.getValue());
@@ -99,7 +102,7 @@ public class EntityCreator {
 
         Element element = elements.pop();
         String tagValue = element.getValue();
-        if (hasAttributes(tagValue)){
+        if (hasAttributes(tagValue)) {
             Map<String, String> attributes = getAttributes(tagValue);
             entity.setAttributes(attributes);
         }
@@ -111,23 +114,19 @@ public class EntityCreator {
 
     }
 
-    private boolean isTag(Element element){
+    private boolean isTag(Element element) {
         String elementValue = element.getValue();
         String identifier = "<";
         return elementValue.contains(identifier);
 
     }
+
     private String getTagName(String tag) {
-        String getTagNameRegExp = "(?<=<)(\\S*)(?=.*>)";
-        /*if (hasAttributes(tag)) {
-            List<String> values = Arrays.asList(tag.split("\\s"));
-            int nameIndex = 0;
-            tag = values.get(nameIndex);
-        }*/
-        Pattern pattern = Pattern.compile(getTagNameRegExp);
+        String getTagNameRegExp = "(?<=<)(\\S*)(?=\\s|(?>))";
+          Pattern pattern = Pattern.compile(getTagNameRegExp);
         Matcher matcher = pattern.matcher(tag);
-        if(matcher.find()){
-           return matcher.group(1);
+        if (matcher.find()) {
+            return matcher.group(1);
         }
         return null;
 
@@ -136,38 +135,39 @@ public class EntityCreator {
     private Map<String, String> getAttributes(String tag) {
         Map<String, String> attributes = new HashMap<>();
 
-        String spaceDelimeter = "\\s";
-        List<String> stringAttributes = new ArrayList<>();
-             stringAttributes.addAll(Arrays.asList(tag.split(spaceDelimeter)));
+        String findAttributesRegExp = "(?<=\\s)(\\S+=(\"[^\"]+\"|'[^']+'))(?=\\s|(?>))";
+        Pattern pattern = Pattern.compile(findAttributesRegExp);
+        Matcher matcher = pattern.matcher(tag);
 
-        int tagNameIndex = 0;
-        stringAttributes.remove(tagNameIndex);
-
-        for(String attribute : stringAttributes){
-            String cleanAttribute = cleanUpAttributeString(attribute);
-            String attrDelimeter = "=";
-            String[] attrNameAndValue = cleanAttribute.split(attrDelimeter);
+        int groupNum = 1;
+        while (matcher.find()) {
+            String attribute = matcher.group(groupNum);
+            String attrDelimiter = "=";
+            String[] attrNameAndValue = attribute.split(attrDelimiter);
 
             int attrNameIndex = 0;
             int attrValueIndex = 1;
 
             String attrName = attrNameAndValue[attrNameIndex];
-            String attrValue = attrNameAndValue[attrValueIndex];
+            String replacement = "";
+            String attrValue = attrNameAndValue[attrValueIndex].replaceAll("\"",replacement).replaceAll("'",replacement);
 
-            attributes.put(attrName,attrValue);
+            attributes.put(attrName, attrValue);
         }
         return attributes;
     }
 
-    private String cleanUpAttributeString(String attribute){
+    private String cleanUpAttributeString(String attribute) {
         String extraSymbolsRegEx = "<?\"?\'?>?";
         String replacement = "";
-        return attribute.replaceAll(extraSymbolsRegEx,replacement);
+        return attribute.replaceAll(extraSymbolsRegEx, replacement);
     }
+
     private boolean isClosingTag(String element) {
         String identifier = "/";
         return element.contains(identifier);
     }
+
     private boolean hasAttributes(String element) {
         String identifier = "=";
         return element.contains(identifier);

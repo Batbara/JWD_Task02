@@ -3,6 +3,7 @@ package by.tc.task02.entity;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,7 +17,7 @@ public class Entity implements Serializable{
 
     public Entity(){
         childEntities = new ArrayList<>();
-        attributes = new HashMap<>();
+        attributes = new LinkedHashMap<>();
     }
 
     public int getNestingLevel() {
@@ -51,7 +52,7 @@ public class Entity implements Serializable{
         this.childEntities = childEntities;
     }
     public void addChildEntities(Entity childEntity){
-        this.childEntities.add(childEntity);
+        this.childEntities.add(0,childEntity);
     }
 
     public Map<String, String> getAttributes() {
@@ -71,5 +72,29 @@ public class Entity implements Serializable{
                 ", childEntities=" + childEntities +
                 ", attributes=" + attributes +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Entity entity = (Entity) o;
+
+        if (nestingLevel != entity.nestingLevel) return false;
+        if (!name.equals(entity.name)) return false;
+        if (!value.equals(entity.value)) return false;
+        if (!childEntities.equals(entity.childEntities)) return false;
+        return attributes.equals(entity.attributes);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = nestingLevel;
+        result = 31 * result + name.hashCode();
+        result = 31 * result + value.hashCode();
+        result = 31 * result + childEntities.hashCode();
+        result = 31 * result + attributes.hashCode();
+        return result;
     }
 }

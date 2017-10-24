@@ -12,7 +12,8 @@ public class Main {
         Entity entity;
         try {
             entity =service.parseSource("test.xml");
-            System.out.println(entity);
+            EntityPrinter.printEntity(entity);
+           // System.out.println(entity);
         } catch (ServiceException e) {
             System.err.println(e.getMessage());
         }
