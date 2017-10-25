@@ -1,7 +1,5 @@
 package by.tc.task02.service.validation;
 
-import by.tc.task02.entity.Source;
-
 import java.net.URL;
 
 public class SourceValidator {

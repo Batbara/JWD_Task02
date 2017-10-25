@@ -6,14 +6,19 @@ import by.tc.task02.service.ServiceException;
 import by.tc.task02.service.ServiceFactory;
 
 public class Main {
-    public static void main (String [] args){
+    public static void main(String[] args) {
         ServiceFactory factory = ServiceFactory.getInstance();
         EntityService service = factory.getEntityService();
+
         Entity entity;
         try {
-            entity =service.parseSource("test.xml");
-            EntityPrinter.printEntity(entity);
-           // System.out.println(entity);
+            entity = service.parseSource("task02.xml");
+            if (entity != null) {
+                EntityPrinter.printEntity(entity);
+            }
+            else {
+                System.out.println("Nothing to show!");
+            }
         } catch (ServiceException e) {
             System.err.println(e.getMessage());
         }

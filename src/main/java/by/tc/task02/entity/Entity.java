@@ -2,7 +2,6 @@ package by.tc.task02.entity;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,17 +63,6 @@ public class Entity implements Serializable{
     }
 
     @Override
-    public String toString() {
-        return "Entity{" +
-                "nestingLevel=" + nestingLevel +
-                ", name='" + name + '\'' +
-                ", value='" + value + '\'' +
-                ", childEntities=" + childEntities +
-                ", attributes=" + attributes +
-                '}';
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -96,5 +84,17 @@ public class Entity implements Serializable{
         result = 31 * result + childEntities.hashCode();
         result = 31 * result + attributes.hashCode();
         return result;
+    }
+
+
+    @Override
+    public String toString() {
+        return "Entity{" +
+                "nestingLevel=" + nestingLevel +
+                ", name='" + name + '\'' +
+                ", value='" + value + '\'' +
+                ", childEntities=" + childEntities +
+                ", attributes=" + attributes +
+                '}';
     }
 }

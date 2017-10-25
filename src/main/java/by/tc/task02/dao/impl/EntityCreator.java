@@ -61,22 +61,24 @@ public class EntityCreator {
             } else {
                 int lastElementSymbol = getIndexOf(TAG_BEGINNING, content, currentSymbol) - 1;
                 String elementValue = content.toString().substring(currentSymbol, lastElementSymbol);
-                pushElement(elementValue, currentNestingLevel);
+                pushElement(elementValue.trim(), currentNestingLevel);
 
                 currentSymbol = lastElementSymbol;
             }
         }
     }
-    private void clearProlog(StringBuilder content){
+
+    private void clearProlog(StringBuilder content) {
         String prologRegExp = "<(\\?|!)[^>]*>";
         Pattern pattern = Pattern.compile(prologRegExp);
         Matcher matcher = pattern.matcher(content.toString());
-        while (matcher.find()){
+        while (matcher.find()) {
             int startIndex = matcher.start();
             int endIndex = matcher.end();
-            content.delete(startIndex,endIndex);
+            content.delete(startIndex, endIndex);
         }
     }
+
     private void processTag(String tagName) {
 
         if (isClosingTag(tagName)) {
@@ -98,7 +100,7 @@ public class EntityCreator {
 
         int entityToPushNestingLevel = entityToPush.getNestingLevel();
 
-        while ( !entityStack.isEmpty() && entityStack.peek().getNestingLevel() > entityToPushNestingLevel) {
+        while (!entityStack.isEmpty() && entityStack.peek().getNestingLevel() > entityToPushNestingLevel) {
 
             Entity entityFromStack = entityStack.pop();
             entityToPush.addChildEntity(entityFromStack);
@@ -113,7 +115,7 @@ public class EntityCreator {
         setEntityValue(entity);
 
         Element element = elements.pop();
-        if(!isTag(element)){
+        if (!isTag(element)) {
             return null;
         }
 
