@@ -51,7 +51,7 @@ public class Entity implements Serializable{
     public void setChildEntities(List<Entity> childEntities) {
         this.childEntities = childEntities;
     }
-    public void addChildEntities(Entity childEntity){
+    public void addChildEntity(Entity childEntity){
         this.childEntities.add(0,childEntity);
     }
 

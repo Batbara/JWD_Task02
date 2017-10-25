@@ -16,15 +16,24 @@ public class EntityPrinter {
         if (hasAttributes(entity)) {
             printTabs(nestingLevel);
             printAttributes(entity);
+        } else{
+            if(hasValue(entity)) {
+                printTabs(nestingLevel + 1);
+            }
         }
 
         if (hasValue(entity)) {
-            printTabs(nestingLevel + 1);
             printEntityValue(entity);
-        }
+            System.out.print(", ");
+        } /*else {
+
+            //printTabs(nestingLevel + 1);
+            newLine();
+        }*/
 
         List<Entity> children = entity.getChildEntities();
         if (children.isEmpty()) {
+            //newLine();
             return;
         }
 
@@ -32,8 +41,9 @@ public class EntityPrinter {
         for (int child = 0; child < childEntitiesSize; child++) {
             Entity childEntity = entity.getChildEntities().get(child);
             printRecursively(childEntity);
-            newLine();
+           // newLine();
         }
+        newLine();
     }
 
     private static void newLine(){
@@ -46,10 +56,12 @@ public class EntityPrinter {
     }
 
     private static boolean hasAttributes(Entity entity){
-        return entity.getAttributes().isEmpty();
+        Map<String, String> attributes = entity.getAttributes();
+        return attributes.size() != 0;
     }
     private static boolean hasValue(Entity entity){
-        return entity.getValue().isEmpty() || entity.getValue() == null;
+        String value = entity.getValue();
+        return value != null;
     }
     private static void printEntityValue(Entity entity){
         System.out.print(entity.getValue());

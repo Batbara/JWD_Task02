@@ -5,28 +5,27 @@ import by.tc.task02.entity.Source;
 import by.tc.task02.entity.Element;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class EntityCreator {
 
-    public static final char TAG_BEGINNING = '<';
-    public static final char TAG_END = '>';
+    private static final char TAG_BEGINNING = '<';
+    private static final char TAG_END = '>';
 
     private Source source;
     private Deque<Element> elements;
     private Deque<Entity> entityStack;
+    private int currentNestingLevel;
 
 
     public EntityCreator() {
         elements = new ArrayDeque<>();
         entityStack = new ArrayDeque<>();
+        currentNestingLevel = 1;
     }
 
     public Source getSource() {
@@ -44,69 +43,88 @@ public class EntityCreator {
 
     private void processSource() {
         StringBuilder content = new StringBuilder(source.getContent());
-
+        clearProlog(content);
         initRoot(content);
 
-        int elementLevel = 1;
-        int symbol = 0;
-        while (content.toString().length() != symbol) {
-            if (content.charAt(symbol) == TAG_BEGINNING) {
-                int lastSymbol = getIndexOf(content, TAG_END, symbol);
-                String tagName = content.toString().substring(symbol, lastSymbol);
+        int currentSymbol = 0;
+        int contentLength = content.toString().length();
+        while (contentLength != currentSymbol) {
+            char currentCharSymbol = content.charAt(currentSymbol);
 
-                symbol = lastSymbol;
+            if (currentCharSymbol == TAG_BEGINNING) {
 
-                if (isClosingTag(tagName)) {
-                    Entity newEntity = formNewEntity(elementLevel);
-                    formEntityStack(newEntity);
-                    elementLevel--;
-                    continue;
-                }
+                int lastTagSymbol = getIndexOf(TAG_END, content, currentSymbol);
+                String tagName = content.toString().substring(currentSymbol, lastTagSymbol);
+                processTag(tagName);
 
-                if (elements.peek().getLevel() <= elementLevel) {
-                    pushElement(tagName, elementLevel);
-                }
-
-                elementLevel++;
+                currentSymbol = lastTagSymbol;
             } else {
-                int lastSymbol = getIndexOf(content, TAG_BEGINNING, symbol) - 1;
-                String tagContent = content.toString().substring(symbol, lastSymbol);
-                pushElement(tagContent, elementLevel);
-                symbol = lastSymbol;
+                int lastElementSymbol = getIndexOf(TAG_BEGINNING, content, currentSymbol) - 1;
+                String elementValue = content.toString().substring(currentSymbol, lastElementSymbol);
+                pushElement(elementValue, currentNestingLevel);
+
+                currentSymbol = lastElementSymbol;
             }
         }
+    }
+    private void clearProlog(StringBuilder content){
+        String prologRegExp = "<(\\?|!)[^>]*>";
+        Pattern pattern = Pattern.compile(prologRegExp);
+        Matcher matcher = pattern.matcher(content.toString());
+        while (matcher.find()){
+            int startIndex = matcher.start();
+            int endIndex = matcher.end();
+            content.delete(startIndex,endIndex);
+        }
+    }
+    private void processTag(String tagName) {
 
+        if (isClosingTag(tagName)) {
+            Entity newEntity = formNewEntity(currentNestingLevel);
+            addToEntityStack(newEntity);
+            currentNestingLevel--;
+            return;
+        }
 
+        pushElement(tagName, currentNestingLevel);
+        currentNestingLevel++;
     }
 
-    private void formEntityStack(Entity entityToPush) {
+    private void addToEntityStack(Entity entityToPush) {
         if (entityStack.isEmpty()) {
             entityStack.push(entityToPush);
             return;
         }
-        while (entityStack.size() != 0 && entityStack.peek().getNestingLevel() > entityToPush.getNestingLevel()) {
-            Entity currentEntity = entityStack.pop();
-            entityToPush.addChildEntities(currentEntity);
+
+        int entityToPushNestingLevel = entityToPush.getNestingLevel();
+
+        while ( !entityStack.isEmpty() && entityStack.peek().getNestingLevel() > entityToPushNestingLevel) {
+
+            Entity entityFromStack = entityStack.pop();
+            entityToPush.addChildEntity(entityFromStack);
         }
+
         entityStack.push(entityToPush);
     }
 
     private Entity formNewEntity(int level) {
         Entity entity = new Entity();
 
-        if (!isTag(elements.peek())) {
-
-            Element element = elements.pop();
-            entity.setValue(element.getValue());
-        }
+        setEntityValue(entity);
 
         Element element = elements.pop();
-        String tagValue = element.getValue();
-        if (hasAttributes(tagValue)) {
-            Map<String, String> attributes = getAttributes(tagValue);
+        if(!isTag(element)){
+            return null;
+        }
+
+        String tag = element.getValue();
+
+        if (hasAttributes(tag)) {
+            Map<String, String> attributes = getAttributes(tag);
             entity.setAttributes(attributes);
         }
-        String tagName = getTagName(tagValue);
+
+        String tagName = getTagName(tag);
         entity.setName(tagName);
         entity.setNestingLevel(level);
 
@@ -122,14 +140,15 @@ public class EntityCreator {
     }
 
     private String getTagName(String tag) {
-        String getTagNameRegExp = "(?<=<)(\\S*)(?=\\s|(?>))";
-          Pattern pattern = Pattern.compile(getTagNameRegExp);
+        String getTagNameRegExp = "(?<=<)(\\S*)(?=\\s|>)";
+
+        Pattern pattern = Pattern.compile(getTagNameRegExp);
         Matcher matcher = pattern.matcher(tag);
+
         if (matcher.find()) {
             return matcher.group(1);
         }
         return null;
-
     }
 
     private Map<String, String> getAttributes(String tag) {
@@ -149,22 +168,24 @@ public class EntityCreator {
             int attrValueIndex = 1;
 
             String attrName = attrNameAndValue[attrNameIndex];
-            String replacement = "";
-            String attrValue = attrNameAndValue[attrValueIndex].replaceAll("\"",replacement).replaceAll("'",replacement);
+            String attrValue = attrNameAndValue[attrValueIndex];
 
-            attributes.put(attrName, attrValue);
+            String formattedAttrValue = formatAttributeValue(attrValue);
+
+            attributes.put(attrName, formattedAttrValue);
         }
         return attributes;
     }
 
-    private String cleanUpAttributeString(String attribute) {
-        String extraSymbolsRegEx = "<?\"?\'?>?";
+    private String formatAttributeValue(String attribute) {
+        String quotes = "\"";
+        String singleQuotes = "'";
         String replacement = "";
-        return attribute.replaceAll(extraSymbolsRegEx, replacement);
+        return attribute.replaceAll(quotes, replacement).replaceAll(singleQuotes, replacement);
     }
 
     private boolean isClosingTag(String element) {
-        String identifier = "/";
+        String identifier = "</";
         return element.contains(identifier);
     }
 
@@ -173,8 +194,8 @@ public class EntityCreator {
         return element.contains(identifier);
     }
 
-    private int getIndexOf(StringBuilder contentBuilder, char character, int symbol) {
-        while (contentBuilder.charAt(symbol) != character) {
+    private int getIndexOf(char character, StringBuilder content, int symbol) {
+        while (content.charAt(symbol) != character) {
             symbol++;
         }
         return symbol + 1;
@@ -188,16 +209,23 @@ public class EntityCreator {
     private void initRoot(StringBuilder contentBuilder) {
         String content = contentBuilder.toString();
 
-        char closingTag = '>';
         int stringBeginning = 0;
-        int closingTagIndex = content.indexOf(closingTag) + 1;
+        int closingTagIndex = content.indexOf(TAG_END) + 1;
 
         String rootTagName = content.substring(stringBeginning, closingTagIndex);
 
-        int topPriority = 1;
-        Element rootElement = new Element(rootTagName, topPriority);
-
+        currentNestingLevel = 1;
+        Element rootElement = new Element(rootTagName, currentNestingLevel);
         elements.push(rootElement);
+
         contentBuilder.delete(stringBeginning, closingTagIndex);
+    }
+
+    private void setEntityValue(Entity entity) {
+        Element topElement = elements.peek();
+        if (!isTag(topElement)) {
+            Element element = elements.pop();
+            entity.setValue(element.getValue());
+        }
     }
 }
