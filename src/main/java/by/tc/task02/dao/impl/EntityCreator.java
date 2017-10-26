@@ -72,11 +72,58 @@ public class EntityCreator {
         String prologRegExp = "<(\\?|!)[^>]*>";
         Pattern pattern = Pattern.compile(prologRegExp);
         Matcher matcher = pattern.matcher(content.toString());
+
         while (matcher.find()) {
             int startIndex = matcher.start();
             int endIndex = matcher.end();
             content.delete(startIndex, endIndex);
         }
+    }
+
+    private void initRoot(StringBuilder contentBuilder) {
+        String content = contentBuilder.toString();
+
+        int stringBeginning = 0;
+        int closingTagIndex = content.indexOf(TAG_END) + 1;
+
+        String rootTagName = content.substring(stringBeginning, closingTagIndex);
+
+        currentNestingLevel = 1;
+        Element rootElement = new Element(rootTagName, currentNestingLevel);
+        elements.push(rootElement);
+
+        contentBuilder.delete(stringBeginning, closingTagIndex);
+    }
+
+    private int getIndexOf(char character, StringBuilder content, int symbol) {
+        while (content.charAt(symbol) != character) {
+            symbol++;
+        }
+        return symbol + 1;
+    }
+
+    private boolean isTag(Element element) {
+        String elementValue = element.getValue();
+        String identifier = "<";
+        return elementValue.contains(identifier);
+
+    }
+
+    private boolean isClosingTag(String element) {
+        String identifier = "</";
+        return element.contains(identifier);
+    }
+
+    private String getTagName(String tag) {
+        String getTagNameRegExp = "(?<=<)(\\S*)(?=\\s|>)";
+
+        Pattern pattern = Pattern.compile(getTagNameRegExp);
+        Matcher matcher = pattern.matcher(tag);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
     }
 
     private void processTag(String tagName) {
@@ -92,65 +139,9 @@ public class EntityCreator {
         currentNestingLevel++;
     }
 
-    private void addToEntityStack(Entity entityToPush) {
-        if (entityStack.isEmpty()) {
-            entityStack.push(entityToPush);
-            return;
-        }
-
-        int entityToPushNestingLevel = entityToPush.getNestingLevel();
-
-        while (!entityStack.isEmpty() && entityStack.peek().getNestingLevel() > entityToPushNestingLevel) {
-
-            Entity entityFromStack = entityStack.pop();
-            entityToPush.addChildEntity(entityFromStack);
-        }
-
-        entityStack.push(entityToPush);
-    }
-
-    private Entity formNewEntity(int level) {
-        Entity entity = new Entity();
-
-        setEntityValue(entity);
-
-        Element element = elements.pop();
-        if (!isTag(element)) {
-            return null;
-        }
-
-        String tag = element.getValue();
-
-        if (hasAttributes(tag)) {
-            Map<String, String> attributes = getAttributes(tag);
-            entity.setAttributes(attributes);
-        }
-
-        String tagName = getTagName(tag);
-        entity.setName(tagName);
-        entity.setNestingLevel(level);
-
-        return entity;
-
-    }
-
-    private boolean isTag(Element element) {
-        String elementValue = element.getValue();
-        String identifier = "<";
-        return elementValue.contains(identifier);
-
-    }
-
-    private String getTagName(String tag) {
-        String getTagNameRegExp = "(?<=<)(\\S*)(?=\\s|>)";
-
-        Pattern pattern = Pattern.compile(getTagNameRegExp);
-        Matcher matcher = pattern.matcher(tag);
-
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        return null;
+    private boolean hasAttributes(String element) {
+        String identifier = "=";
+        return element.contains(identifier);
     }
 
     private Map<String, String> getAttributes(String tag) {
@@ -186,41 +177,35 @@ public class EntityCreator {
         return attribute.replaceAll(quotes, replacement).replaceAll(singleQuotes, replacement);
     }
 
-    private boolean isClosingTag(String element) {
-        String identifier = "</";
-        return element.contains(identifier);
-    }
-
-    private boolean hasAttributes(String element) {
-        String identifier = "=";
-        return element.contains(identifier);
-    }
-
-    private int getIndexOf(char character, StringBuilder content, int symbol) {
-        while (content.charAt(symbol) != character) {
-            symbol++;
-        }
-        return symbol + 1;
-    }
-
     private void pushElement(String value, int level) {
         Element element = new Element(value, level);
         this.elements.push(element);
     }
 
-    private void initRoot(StringBuilder contentBuilder) {
-        String content = contentBuilder.toString();
 
-        int stringBeginning = 0;
-        int closingTagIndex = content.indexOf(TAG_END) + 1;
+    private Entity formNewEntity(int level) {
+        Entity entity = new Entity();
 
-        String rootTagName = content.substring(stringBeginning, closingTagIndex);
+        setEntityValue(entity);
 
-        currentNestingLevel = 1;
-        Element rootElement = new Element(rootTagName, currentNestingLevel);
-        elements.push(rootElement);
+        Element element = elements.pop();
+        if (!isTag(element)) {
+            return null;
+        }
 
-        contentBuilder.delete(stringBeginning, closingTagIndex);
+        String tag = element.getValue();
+
+        if (hasAttributes(tag)) {
+            Map<String, String> attributes = getAttributes(tag);
+            entity.setAttributes(attributes);
+        }
+
+        String tagName = getTagName(tag);
+        entity.setName(tagName);
+        entity.setNestingLevel(level);
+
+        return entity;
+
     }
 
     private void setEntityValue(Entity entity) {
@@ -229,5 +214,22 @@ public class EntityCreator {
             Element element = elements.pop();
             entity.setValue(element.getValue());
         }
+    }
+
+    private void addToEntityStack(Entity entityToPush) {
+        if (entityStack.isEmpty()) {
+            entityStack.push(entityToPush);
+            return;
+        }
+
+        int entityToPushNestingLevel = entityToPush.getNestingLevel();
+
+        while (!entityStack.isEmpty() && entityStack.peek().getNestingLevel() > entityToPushNestingLevel) {
+
+            Entity entityFromStack = entityStack.pop();
+            entityToPush.addChildEntity(entityFromStack);
+        }
+
+        entityStack.push(entityToPush);
     }
 }

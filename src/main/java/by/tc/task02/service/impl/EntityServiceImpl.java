@@ -10,6 +10,7 @@ import by.tc.task02.service.validation.SourceValidator;
 
 public class EntityServiceImpl implements EntityService{
     public Entity parseSource(String sourceName) throws ServiceException {
+
         if(!SourceValidator.isSourceNameValid(sourceName)){
             return null;
         }
@@ -20,7 +21,7 @@ public class EntityServiceImpl implements EntityService{
         try {
             entity = entityDAO.parseSource(sourceName);
         } catch (DAOException e) {
-            throw new ServiceException("DAOException!!",e);
+            throw new ServiceException("DAOException!",e);
         }
         return entity;
     }

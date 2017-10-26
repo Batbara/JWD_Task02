@@ -21,6 +21,10 @@ public class Main {
             }
         } catch (ServiceException e) {
             System.err.println(e.getMessage());
+
+            int errorExitStatus = 1;
+            System.exit(errorExitStatus);
         }
     }
+
 }
