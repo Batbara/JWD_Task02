@@ -6,29 +6,22 @@ import java.util.List;
 import java.util.Map;
 
 public class EntityPrinter {
+
     public static void printEntity(Entity entity) {
-        int rootPrevLevel = 1;
-        int rootNextLevel = 2;
-        printRecursively(entity, rootPrevLevel, rootNextLevel);
+        printRecursively(entity);
     }
 
-    private static void printRecursively(Entity entity, int prevLevel, int nextLevel) {
+    private static void printRecursively(Entity entity) {
         int nestingLevel = entity.getNestingLevel();
 
         if (hasAttributes(entity)) {
-            newLine();
             printTabs(nestingLevel);
             printAttributes(entity);
         }
 
         if (hasValue(entity)) {
-            if (nestingLevel != prevLevel) {
-                printTabs(nestingLevel + 1);
-            }
+            printTabs(nestingLevel);
             printEntityValue(entity);
-            if (nestingLevel == nextLevel) {
-                System.out.print(" - ");
-            }
         }
 
         List<Entity> children = entity.getChildEntities();
@@ -38,32 +31,9 @@ public class EntityPrinter {
 
         int childEntitiesSize = children.size();
         for (int child = 0; child < childEntitiesSize; child++) {
-            int previousLevel = getPreviousNestingLevel(entity, child);
-            int nextNestingLevel = getNextNestingLevel(entity, child);
-
             Entity childEntity = entity.getChildEntities().get(child);
-            printRecursively(childEntity, previousLevel, nextNestingLevel);
+            printRecursively(childEntity);
         }
-        newLine();
-    }
-
-    private static int getPreviousNestingLevel(Entity entity, int currentChild) {
-        int previousLevel = entity.getNestingLevel();
-        if (currentChild != 0) {
-            previousLevel = entity.getChildEntities().get(currentChild - 1).getNestingLevel();
-        }
-        return previousLevel;
-    }
-
-    private static int getNextNestingLevel(Entity entity, int currentChild) {
-        int childEntitiesSize = entity.getChildEntities().size();
-        int nextNestingLevel;
-        if (currentChild != childEntitiesSize - 1) {
-            nextNestingLevel = entity.getChildEntities().get(currentChild + 1).getNestingLevel();
-        } else {
-            nextNestingLevel = entity.getNestingLevel();
-        }
-        return nextNestingLevel;
     }
 
     private static void newLine() {
@@ -87,7 +57,7 @@ public class EntityPrinter {
     }
 
     private static void printEntityValue(Entity entity) {
-        System.out.print(entity.getValue());
+        System.out.println(" - " + entity.getValue());
     }
 
     private static void printAttributes(Entity entity) {
@@ -95,7 +65,6 @@ public class EntityPrinter {
 
         int count = 1;
         int attrSize = attributes.size();
-
         for (String attributeName : attributes.keySet()) {
             if (count == attrSize) {
                 System.out.print(attributes.get(attributeName) + ":");

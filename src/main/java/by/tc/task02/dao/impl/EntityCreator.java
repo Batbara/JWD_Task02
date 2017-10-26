@@ -7,6 +7,7 @@ import by.tc.task02.entity.Element;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,7 +26,7 @@ public class EntityCreator {
     public EntityCreator() {
         elements = new ArrayDeque<>();
         entityStack = new ArrayDeque<>();
-        currentNestingLevel = 1;
+        currentNestingLevel = 0;
     }
 
     public Source getSource() {
@@ -76,8 +77,11 @@ public class EntityCreator {
         while (matcher.find()) {
             int startIndex = matcher.start();
             int endIndex = matcher.end();
+
             content.delete(startIndex, endIndex);
+            matcher = pattern.matcher(content.toString());
         }
+
     }
 
     private void initRoot(StringBuilder contentBuilder) {
@@ -88,7 +92,7 @@ public class EntityCreator {
 
         String rootTagName = content.substring(stringBeginning, closingTagIndex);
 
-        currentNestingLevel = 1;
+        currentNestingLevel = 0;
         Element rootElement = new Element(rootTagName, currentNestingLevel);
         elements.push(rootElement);
 
@@ -145,7 +149,7 @@ public class EntityCreator {
     }
 
     private Map<String, String> getAttributes(String tag) {
-        Map<String, String> attributes = new HashMap<>();
+        Map<String, String> attributes = new LinkedHashMap<>();
 
         String findAttributesRegExp = "(?<=\\s)(\\S+=(\"[^\"]+\"|'[^']+'))(?=\\s|(?>))";
         Pattern pattern = Pattern.compile(findAttributesRegExp);
