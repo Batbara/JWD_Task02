@@ -17,6 +17,14 @@
                     <target>1.7</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>by.tc.task02</groupId>
+                <artifactId>jwd-task02</artifactId>
+                <version>0.0.1</version>
+                <configuration>
+                    <mainClass>by.tc.task02.main.Main</mainClass>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
